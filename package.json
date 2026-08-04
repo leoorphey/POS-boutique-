@@ -16,7 +16,6 @@
     "build:server": "npm run build --workspace=server",
     "build:shared": "npm run build --workspace=shared",
     "build": "npm run build:shared && npm run build:server && npm run build:client",
-    "postinstall": "npm run build:shared",
     "test:server": "npm run test --workspace=server",
     "test:client": "npm run test --workspace=client",
     "test": "npm run test:server && npm run test:client",
