@@ -1,5 +1,7 @@
 {
+  "framework": null,
   "buildCommand": "npm install && npm run build:shared && npm run build:client",
   "outputDirectory": "client/dist",
+  "installCommand": "echo 'skip - handled in buildCommand'",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
