@@ -18,6 +18,7 @@ import { exportRouter } from "@/modules/export/export.routes";
 
 export function createApp(): Application {
   const app = express();
+  app.set("trust proxy", 1);
 
   // Sécurité HTTP de base (en-têtes : X-Frame-Options, CSP basique, etc.)
   app.use(helmet());
