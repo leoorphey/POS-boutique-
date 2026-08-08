@@ -9,10 +9,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/, /shared/],
+    },
+  },
   server: {
-  host: "0.0.0.0",
-  port: 3001,
-  strictPort: true,
-  hmr: { host: "127.0.0.1" }
-}
+    host: "0.0.0.0",
+    port: 3001,
+    strictPort: true,
+    hmr: { host: "127.0.0.1" },
+  },
 });
