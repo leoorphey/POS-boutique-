@@ -1,23 +1,12 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { env } from "@/config/env";
 import { Sale, SaleItem, Prisma } from "@prisma/client";
 import { AppError } from "@/utils/AppError";
 
+const resendClient = new Resend(env.resend.apiKey);
+
 type SaleWithItems = Sale & { items: SaleItem[]; seller?: { nom: string } | null };
 
-let transporter: nodemailer.Transporter | null = null;
-
-function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: env.smtp.host,
-      port: env.smtp.port,
-      secure: env.smtp.secure,
-      auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.pass } : undefined,
-    });
-  }
-  return transporter;
-}
 
 function formatAmount(amount: Prisma.Decimal | number) {
   return `${Number(amount).toLocaleString("fr-FR")} FCFA`;
@@ -46,8 +35,8 @@ export const emailService = {
   // Le template HTML complet (mise en page professionnelle) est développé en Phase 8 ;
   // cette version texte/HTML simple est fonctionnelle dès cette phase.
   async sendSaleNotification(sale: SaleWithItems) {
-    if (!env.smtp.ownerEmail || !env.smtp.host) {
-      console.warn("Email non envoyé : OWNER_EMAIL ou SMTP_HOST non configuré");
+    if (!env.smtp.ownerEmail || !env.resend.apiKey) {
+      console.warn("Email non envoyé : OWNER_EMAIL ou RESEND_API_KEY non configuré");
       return;
     }
 
@@ -89,18 +78,22 @@ export const emailService = {
       </div>
     `;
 
-    await getTransporter().sendMail({
-      from: env.smtp.from,
-      to: env.smtp.ownerEmail,
-      subject: `Nouvelle vente — ${sale.reference}`,
-      html,
-    });
+    try {
+      await resendClient.emails.send({
+        from: env.resend.from,
+        to: env.smtp.ownerEmail,
+        subject: `Nouvelle vente — ${sale.reference}`,
+        html,
+      });
+    } catch (err) {
+      console.error("Échec de l'envoi de l'email de notification de vente:", err);
+    }
   },
 
   // Envoi d'une confirmation au vendeur ayant réalisé la vente
   async sendSaleConfirmationToSeller(sale: SaleWithItems, sellerEmail: string) {
-    if (!sellerEmail || !env.smtp.host) {
-      console.warn("Email vendeur non envoyé : email vendeur absent ou SMTP non configuré");
+    if (!sellerEmail || !env.resend.apiKey) {
+      console.warn("Email vendeur non envoyé : email vendeur absent ou RESEND_API_KEY non configuré");
       return;
     }
 
@@ -143,8 +136,8 @@ export const emailService = {
     `;
 
     try {
-      await getTransporter().sendMail({
-        from: env.smtp.from,
+      await resendClient.emails.send({
+        from: env.resend.from,
         to: sellerEmail,
         subject: `Confirmation de vente — ${sale.reference}`,
         html,
@@ -155,8 +148,8 @@ export const emailService = {
   },
 
   async sendPasswordResetEmail({ name, email, resetUrl }: { name: string; email: string; resetUrl: string }) {
-    if (!env.smtp.host || !env.smtp.from) {
-      console.warn("Email non envoyé : SMTP_HOST ou EMAIL_FROM non configuré pour la réinitialisation du mot de passe");
+    if (!env.resend.apiKey || !env.resend.from) {
+      console.warn("Email non envoyé : RESEND_API_KEY ou EMAIL_FROM non configuré pour la réinitialisation du mot de passe");
       return;
     }
 
@@ -171,8 +164,8 @@ export const emailService = {
       </div>
     `;
 
-    await getTransporter().sendMail({
-      from: env.smtp.from,
+    await resendClient.emails.send({
+      from: env.resend.from,
       to: email,
       subject: `Réinitialisation du mot de passe — ${env.shop.name}`,
       html,
@@ -183,14 +176,14 @@ export const emailService = {
   // (bouton "envoyer par email" sur le reçu).
   async sendReceiptToCustomer(sale: SaleWithItems, recipientEmail: string, pdfBuffer: Buffer) {
     // Si SMTP n'est pas configuré, retourner un message d'info au lieu de crasher
-    if (!env.smtp.host || !env.smtp.from) {
-      console.warn("Email non envoyé : SMTP_HOST ou EMAIL_FROM non configuré. Le reçu PDF peut être téléchargé manuellement.");
+    if (!env.resend.apiKey || !env.resend.from) {
+      console.warn("Email non envoyé : RESEND_API_KEY ou EMAIL_FROM non configuré. Le reçu PDF peut être téléchargé manuellement.");
       return;
     }
 
     try {
-      await getTransporter().sendMail({
-        from: env.smtp.from,
+      await resendClient.emails.send({
+        from: env.resend.from,
         to: recipientEmail,
         subject: `Votre reçu — ${sale.reference} — ${env.shop.name}`,
         html: `
@@ -205,17 +198,12 @@ export const emailService = {
         attachments: [
           {
             filename: `recu-${sale.reference}.pdf`,
-            content: pdfBuffer,
-            contentType: "application/pdf",
+            content: pdfBuffer.toString("base64"),
           },
         ],
       });
     } catch (error) {
-      throw AppError.internal(
-        `Échec de l'envoi du reçu par email : ${
-          error instanceof Error ? error.message : "erreur inconnue"
-        }`
-      );
+      console.error("Échec de l'envoi du reçu par email :", error);
     }
   },
 };

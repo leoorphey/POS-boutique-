@@ -52,6 +52,11 @@ export const env = {
     ownerEmail: process.env.OWNER_EMAIL ?? "",
   },
 
+  resend: {
+    apiKey: process.env.RESEND_API_KEY ?? "",
+    from: process.env.EMAIL_FROM ?? "POS Boutique <onboarding@resend.dev>",
+  },
+
   shop: {
     name: process.env.SHOP_NAME ?? "Boutique Informatique",
     address: process.env.SHOP_ADDRESS ?? "",
