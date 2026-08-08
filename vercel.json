@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "npm install && npm run build:shared && ls -la shared/dist/ && cat shared/dist/index.js && npm run build:client",
+  "buildCommand": "npm install && npm run build:shared && ls -la node_modules/@pos/ && cat node_modules/@pos/shared/package.json && npm run build:client",
   "outputDirectory": "client/dist",
   "installCommand": "echo 'skip - handled in buildCommand'",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
