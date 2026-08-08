@@ -174,15 +174,24 @@ export const emailService = {
 
   // Envoi du reçu PDF au client, sur demande depuis l'interface POS
   // (bouton "envoyer par email" sur le reçu).
+ // Envoi du reçu PDF au client, sur demande depuis l'interface POS
+  // (bouton "envoyer par email" sur le reçu).
   async sendReceiptToCustomer(sale: SaleWithItems, recipientEmail: string, pdfBuffer: Buffer) {
-    // Si SMTP n'est pas configuré, retourner un message d'info au lieu de crasher
+    console.log("=== DEBUG EMAIL === Entrée dans sendReceiptToCustomer");
+    console.log("=== DEBUG EMAIL === recipientEmail:", recipientEmail);
+    console.log("=== DEBUG EMAIL === env.resend.apiKey présent:", !!env.resend.apiKey, "longueur:", env.resend.apiKey?.length ?? 0);
+    console.log("=== DEBUG EMAIL === env.resend.from:", env.resend.from);
+    console.log("=== DEBUG EMAIL === pdfBuffer taille:", pdfBuffer?.length ?? "undefined");
+
     if (!env.resend.apiKey || !env.resend.from) {
-      console.warn("Email non envoyé : RESEND_API_KEY ou EMAIL_FROM non configuré. Le reçu PDF peut être téléchargé manuellement.");
+      console.log("=== DEBUG EMAIL === BLOQUÉ par la garde apiKey/from, sortie anticipée");
       return;
     }
 
+    console.log("=== DEBUG EMAIL === Garde passée, tentative d'appel resendClient.emails.send...");
+
     try {
-      await resendClient.emails.send({
+      const result = await resendClient.emails.send({
         from: env.resend.from,
         to: recipientEmail,
         subject: `Votre reçu — ${sale.reference} — ${env.shop.name}`,
@@ -202,8 +211,11 @@ export const emailService = {
           },
         ],
       });
+      console.log("=== DEBUG EMAIL === SUCCÈS, résultat complet:", JSON.stringify(result));
     } catch (error) {
-      console.error("Échec de l'envoi du reçu par email :", error);
+      console.log("=== DEBUG EMAIL === ERREUR CAPTURÉE:", error);
+      console.log("=== DEBUG EMAIL === ERREUR type:", typeof error);
+      console.log("=== DEBUG EMAIL === ERREUR JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     }
   },
 };
