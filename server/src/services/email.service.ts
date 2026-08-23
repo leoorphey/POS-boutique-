@@ -34,14 +34,9 @@ export const emailService = {
   // Notification au propriétaire après chaque vente validée.
   // Le template HTML complet (mise en page professionnelle) est développé en Phase 8 ;
   // cette version texte/HTML simple est fonctionnelle dès cette phase.
-    async sendSaleNotification(sale: SaleWithItems) {
-    console.log("=== DEBUG EMAIL ADMIN === Entrée dans sendSaleNotification");
-    console.log("=== DEBUG EMAIL ADMIN === env.smtp.ownerEmail:", env.smtp.ownerEmail);
-    console.log("=== DEBUG EMAIL ADMIN === env.resend.apiKey présent:", !!env.resend.apiKey, "longueur:", env.resend.apiKey?.length ?? 0);
-    console.log("=== DEBUG EMAIL ADMIN === env.resend.from:", env.resend.from);
-
+      async sendSaleNotification(sale: SaleWithItems) {
     if (!env.smtp.ownerEmail || !env.resend.apiKey) {
-      console.log("=== DEBUG EMAIL ADMIN === BLOQUÉ par la garde ownerEmail/apiKey, sortie anticipée");
+      console.warn("Email non envoyé : OWNER_EMAIL ou RESEND_API_KEY non configuré");
       return;
     }
 
@@ -83,8 +78,6 @@ export const emailService = {
       </div>
     `;
 
-    console.log("=== DEBUG EMAIL ADMIN === Garde passée, tentative d'appel resendClient.emails.send...");
-
     try {
       const result = await resendClient.emails.send({
         from: env.resend.from,
@@ -92,9 +85,11 @@ export const emailService = {
         subject: `Nouvelle vente — ${sale.reference}`,
         html,
       });
-      console.log("=== DEBUG EMAIL ADMIN === RÉSULTAT complet:", JSON.stringify(result));
+      if (result.error) {
+        console.error("Échec de l'envoi de l'email de notification de vente:", result.error);
+      }
     } catch (err) {
-      console.log("=== DEBUG EMAIL ADMIN === ERREUR CAPTURÉE:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+      console.error("Échec de l'envoi de l'email de notification de vente:", err);
     }
   },
 
@@ -184,19 +179,13 @@ export const emailService = {
   // (bouton "envoyer par email" sur le reçu).
  // Envoi du reçu PDF au client, sur demande depuis l'interface POS
   // (bouton "envoyer par email" sur le reçu).
+    // Envoi du reçu PDF au client, sur demande depuis l'interface POS
+  // (bouton "envoyer par email" sur le reçu).
   async sendReceiptToCustomer(sale: SaleWithItems, recipientEmail: string, pdfBuffer: Buffer) {
-    console.log("=== DEBUG EMAIL === Entrée dans sendReceiptToCustomer");
-    console.log("=== DEBUG EMAIL === recipientEmail:", recipientEmail);
-    console.log("=== DEBUG EMAIL === env.resend.apiKey présent:", !!env.resend.apiKey, "longueur:", env.resend.apiKey?.length ?? 0);
-    console.log("=== DEBUG EMAIL === env.resend.from:", env.resend.from);
-    console.log("=== DEBUG EMAIL === pdfBuffer taille:", pdfBuffer?.length ?? "undefined");
-
     if (!env.resend.apiKey || !env.resend.from) {
-      console.log("=== DEBUG EMAIL === BLOQUÉ par la garde apiKey/from, sortie anticipée");
+      console.warn("Email non envoyé : RESEND_API_KEY ou EMAIL_FROM non configuré. Le reçu PDF peut être téléchargé manuellement.");
       return;
     }
-
-    console.log("=== DEBUG EMAIL === Garde passée, tentative d'appel resendClient.emails.send...");
 
     try {
       const result = await resendClient.emails.send({
@@ -219,11 +208,11 @@ export const emailService = {
           },
         ],
       });
-      console.log("=== DEBUG EMAIL === SUCCÈS, résultat complet:", JSON.stringify(result));
+      if (result.error) {
+        console.error("Échec de l'envoi du reçu par email :", result.error);
+      }
     } catch (error) {
-      console.log("=== DEBUG EMAIL === ERREUR CAPTURÉE:", error);
-      console.log("=== DEBUG EMAIL === ERREUR type:", typeof error);
-      console.log("=== DEBUG EMAIL === ERREUR JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      console.error("Échec de l'envoi du reçu par email :", error);
     }
   },
 };
