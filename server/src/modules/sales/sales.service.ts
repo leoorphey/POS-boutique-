@@ -137,12 +137,18 @@ export const salesService = {
           meta: { reference, total: total.toString() },
         });
 
-        // Envoi au vendeur (best-effort)
+                 // Envoi au vendeur (best-effort)
         if (sale.seller?.email) {
           emailService.sendSaleConfirmationToSeller(sale as any, sale.seller.email).catch((err) => {
             console.error('Échec de l\'envoi de l\'email au vendeur :', err);
           });
         }
+
+        // Envoi au propriétaire/admin (best-effort)
+        emailService.sendSaleNotification(sale as any).catch((err) => {
+          console.error("Échec de l'envoi de l'email au propriétaire :", err);
+        });
+
 
         return sale;
       }
@@ -203,12 +209,17 @@ export const salesService = {
             },
           });
 
-          // Envoi au vendeur (best-effort)
+         // Envoi au vendeur (best-effort)
           if (sale.seller?.email) {
             emailService.sendSaleConfirmationToSeller(sale as any, sale.seller.email).catch((err) => {
               console.error('Échec de l\'envoi de l\'email au vendeur :', err);
             });
           }
+
+          // Envoi au propriétaire/admin (best-effort)
+          emailService.sendSaleNotification(sale as any).catch((err) => {
+            console.error("Échec de l'envoi de l'email au propriétaire :", err);
+          });
 
           return sale;
         }
