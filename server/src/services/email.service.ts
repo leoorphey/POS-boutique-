@@ -34,9 +34,14 @@ export const emailService = {
   // Notification au propriétaire après chaque vente validée.
   // Le template HTML complet (mise en page professionnelle) est développé en Phase 8 ;
   // cette version texte/HTML simple est fonctionnelle dès cette phase.
-  async sendSaleNotification(sale: SaleWithItems) {
+    async sendSaleNotification(sale: SaleWithItems) {
+    console.log("=== DEBUG EMAIL ADMIN === Entrée dans sendSaleNotification");
+    console.log("=== DEBUG EMAIL ADMIN === env.smtp.ownerEmail:", env.smtp.ownerEmail);
+    console.log("=== DEBUG EMAIL ADMIN === env.resend.apiKey présent:", !!env.resend.apiKey, "longueur:", env.resend.apiKey?.length ?? 0);
+    console.log("=== DEBUG EMAIL ADMIN === env.resend.from:", env.resend.from);
+
     if (!env.smtp.ownerEmail || !env.resend.apiKey) {
-      console.warn("Email non envoyé : OWNER_EMAIL ou RESEND_API_KEY non configuré");
+      console.log("=== DEBUG EMAIL ADMIN === BLOQUÉ par la garde ownerEmail/apiKey, sortie anticipée");
       return;
     }
 
@@ -78,15 +83,18 @@ export const emailService = {
       </div>
     `;
 
+    console.log("=== DEBUG EMAIL ADMIN === Garde passée, tentative d'appel resendClient.emails.send...");
+
     try {
-      await resendClient.emails.send({
+      const result = await resendClient.emails.send({
         from: env.resend.from,
         to: env.smtp.ownerEmail,
         subject: `Nouvelle vente — ${sale.reference}`,
         html,
       });
+      console.log("=== DEBUG EMAIL ADMIN === RÉSULTAT complet:", JSON.stringify(result));
     } catch (err) {
-      console.error("Échec de l'envoi de l'email de notification de vente:", err);
+      console.log("=== DEBUG EMAIL ADMIN === ERREUR CAPTURÉE:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
     }
   },
 
